@@ -1,5 +1,16 @@
 // DJ Audio Engine - Dual Deck Web Audio API Controller
 // Features: Classic Auto-DJ & Live Mashup Mode, EBU R128 mastering, Downbeat Phrase Drops, and Speed Protection
+import { audioBufferToWavBlob } from '../utils/wavEncoder';
+
+// Guaranteed persistent backup presets to ensure custom user settings are never lost across sessions
+export const DEFAULT_BACKUP_PRESETS = {
+  "2JzQhcSc2pM": { trimStart: 18.0, trimEnd: 165.0, speed: 1.0, reverbWet: 0.3, reverbPreset: "hall" }, // MP3
+  "wb82fstyc-o": { trimStart: 6.5, trimEnd: 158.0, speed: 1.0, reverbWet: 0.0, reverbPreset: "hall" }, // DOLA RE
+  "X3LHcxy6530": { trimStart: 8.5, trimEnd: 180.0, speed: 1.05, reverbWet: 0.45, reverbPreset: "cathedral" }, // MEXICAN COKE
+  "RfMi5qoigVc": { trimStart: 5.0, trimEnd: 160.0, speed: 1.0, reverbWet: 0.0, reverbPreset: "hall" }, // Mona Lisa
+  "XCIYHCXQoxQ": { trimStart: 66.5, trimEnd: 350.0, speed: 1.05, reverbWet: 0.15, reverbPreset: "room" }, // Seedhe Maut - RED
+  "Q5r9-k7xYGw": { trimStart: 26.5, trimEnd: 172.0, speed: 1.0, reverbWet: 0.0, reverbPreset: "hall" }  // 11K
+};
 
 class DJEngine {
   constructor() {
@@ -13,11 +24,14 @@ class DJEngine {
       eqLow: null,
       eqMid: null,
       eqHigh: null,
+      analyser: null,
       track: null,
       volume: 1.0,
       bpm: 128,
       rate: 1.0,
       cueTime: 0.0,
+      trimStart: 0.0,
+      trimEnd: null,
       isPreloaded: false,
       isScratching: false,
       jogAngle: 0
@@ -31,11 +45,14 @@ class DJEngine {
       eqLow: null,
       eqMid: null,
       eqHigh: null,
+      analyser: null,
       track: null,
       volume: 1.0,
       bpm: 128,
       rate: 1.0,
       cueTime: 0.0,
+      trimStart: 0.0,
+      trimEnd: null,
       isPreloaded: false,
       isScratching: false,
       jogAngle: 0
@@ -86,6 +103,14 @@ class DJEngine {
     this.onBeatPulse = () => {};
     this.onMashupTick = () => {};
     this.onDiscoBeatToggle = () => {};
+    this.onRecordingStateChange = () => {};
+
+    // Live Recording state
+    this.isRecording = false;
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    this.recordingStartTime = 0;
+    this.recDestination = null;
 
     // Animation / update loop
     this.rafId = null;
@@ -144,6 +169,10 @@ class DJEngine {
         this.masterGain.connect(this.limiter);
         this.limiter.connect(this.analyser);
         this.analyser.connect(this.audioCtx.destination);
+
+        // Connect master gain to stream destination for live mix recording
+        this.recDestination = this.audioCtx.createMediaStreamDestination();
+        this.masterGain.connect(this.recDestination);
       }
 
       this.setupDeckNodes(this.deckA);
@@ -213,6 +242,11 @@ class DJEngine {
       deck.reverbConvolver = this.audioCtx.createConvolver();
       deck.reverbConvolver.buffer = this.buildImpulseResponse(2.2, 2.0);
 
+      // Deck Waveform Analyser
+      deck.analyser = this.audioCtx.createAnalyser();
+      deck.analyser.fftSize = 256;
+      deck.analyser.smoothingTimeConstant = 0.8;
+
       // Connect: source -> eqLow -> eqMid -> eqHigh
       deck.source.connect(deck.eqLow);
       deck.eqLow.connect(deck.eqMid);
@@ -226,6 +260,8 @@ class DJEngine {
       deck.reverbConvolver.connect(deck.reverbWetGain);
       deck.reverbWetGain.connect(deck.gainNode);
 
+      // GainNode sends to deck analyser and master bus
+      deck.gainNode.connect(deck.analyser);
       deck.gainNode.connect(this.masterGain);
     } catch (err) {
       console.warn(`[DJ Engine] setupDeckNodes error on Deck ${deck.id}:`, err);
@@ -243,7 +279,7 @@ class DJEngine {
     }
   }
 
-  // Equal-power crossfader
+  // Equal-power crossfader (Web Audio gainNode controls volume exclusively)
   applyCrossfader(pos) {
     this.crossfaderPosition = Math.max(0, Math.min(1, pos));
 
@@ -261,9 +297,6 @@ class DJEngine {
       this.deckA.gainNode.gain.setValueAtTime(gainA, now);
       this.deckB.gainNode.gain.setValueAtTime(gainB, now);
     }
-
-    if (this.deckA.audio) this.deckA.audio.volume = gainA;
-    if (this.deckB.audio) this.deckB.audio.volume = gainB;
   }
 
   setDeckVolume(deckId, vol) {
@@ -290,24 +323,45 @@ class DJEngine {
     }
   }
 
-  // --- PRESET SYSTEM (Trim / Start Point, Speed, Reverb) ---
+  getDeckAnalyser(deckId) {
+    return deckId === 'A' ? this.deckA.analyser : this.deckB.analyser;
+  }
+
+  // Set Manual Cue Point directly (e.g. from Waveform Visualizer click)
+  setDeckCueTime(deckId, cueSeconds) {
+    const deck = deckId === 'A' ? this.deckA : this.deckB;
+    deck.cueTime = Math.max(0, parseFloat(cueSeconds.toFixed(1)));
+    deck.trimStart = deck.cueTime;
+
+    if (deck.track?.id) {
+      const existing = this.loadPresetForTrack(deck.track.id) || {};
+      this.savePresetForTrack(deck.track.id, {
+        ...existing,
+        trimStart: deck.cueTime
+      });
+    }
+    this.onStateUpdate();
+  }
+
+  // --- PRESET SYSTEM (Trim / Start Point, Outro Cut, Speed, Reverb) ---
   loadPresetForTrack(trackId) {
     try {
       const raw = localStorage.getItem('autodj_track_presets');
       if (raw) {
         const presets = JSON.parse(raw);
-        return presets[trackId] || null;
+        if (presets[trackId]) return presets[trackId];
       }
     } catch (e) {
       console.warn('Error reading presets:', e);
     }
-    return null;
+    // Return backup default preset if available
+    return DEFAULT_BACKUP_PRESETS[trackId] || null;
   }
 
   savePresetForTrack(trackId, presetData) {
     try {
       const raw = localStorage.getItem('autodj_track_presets');
-      const presets = raw ? JSON.parse(raw) : {};
+      const presets = raw ? JSON.parse(raw) : { ...DEFAULT_BACKUP_PRESETS };
       presets[trackId] = presetData;
       localStorage.setItem('autodj_track_presets', JSON.stringify(presets));
       console.log(`[Preset Saved] Saved preset for ${trackId}:`, presetData);
@@ -336,9 +390,12 @@ class DJEngine {
   getAllPresets() {
     try {
       const raw = localStorage.getItem('autodj_track_presets');
-      return raw ? JSON.parse(raw) : {};
+      const existing = raw ? JSON.parse(raw) : {};
+      const merged = { ...DEFAULT_BACKUP_PRESETS, ...existing };
+      localStorage.setItem('autodj_track_presets', JSON.stringify(merged));
+      return merged;
     } catch (e) {
-      return {};
+      return { ...DEFAULT_BACKUP_PRESETS };
     }
   }
 
@@ -376,6 +433,11 @@ class DJEngine {
     deck.trimStart = Math.max(0, startSecs);
   }
 
+  setDeckOutroPoint(deckId, outroSecs) {
+    const deck = deckId === 'A' ? this.deckA : this.deckB;
+    deck.trimEnd = outroSecs ? Math.max(0, outroSecs) : null;
+  }
+
   loadTrack(deckId, track) {
     const deck = deckId === 'A' ? this.deckA : this.deckB;
     deck.track = track;
@@ -386,12 +448,14 @@ class DJEngine {
     if (preset) {
       deck.cueTime = preset.trimStart ?? (track.firstBeat || 0.0);
       deck.trimStart = preset.trimStart ?? 0.0;
+      deck.trimEnd = preset.trimEnd ?? null;
       deck.rate = preset.speed ?? 1.0;
       deck.userRate = preset.speed ?? 1.0;
       this.setDeckReverb(deckId, preset.reverbWet ?? 0.0, preset.reverbDecay ?? 2.2);
     } else {
       deck.cueTime = track.firstBeat || 0.0;
       deck.trimStart = 0.0;
+      deck.trimEnd = null;
       deck.rate = 1.0;
       deck.userRate = 1.0;
       this.setDeckReverb(deckId, 0.0, 2.2);
@@ -810,14 +874,144 @@ class DJEngine {
       return;
     }
 
-    // 3. CLASSIC AUTO-DJ TRIGGER (End of track lead trigger)
-    if (this.autoDJEnabled && this.isPlaying && this.mode === 'classic' && activeDeck.audio && activeDeck.audio.duration) {
-      const remaining = activeDeck.audio.duration - activeDeck.audio.currentTime;
+    // 3. OUTRO TRIM & CLASSIC AUTO-DJ TRIGGERS
+    if (this.autoDJEnabled && this.isPlaying && activeDeck.audio && activeDeck.audio.duration) {
+      const curTime = activeDeck.audio.currentTime;
+      const duration = activeDeck.audio.duration;
 
-      if (remaining <= this.crossfadeTriggerLead && remaining > 0 && nextDeck.track) {
+      // If user preset configured a custom outro/end point for this track:
+      if (activeDeck.trimEnd && curTime >= activeDeck.trimEnd && !this.isTransitioning && nextDeck.track) {
+        console.log(`[Auto-DJ] Reached user preset Outro Trim (${activeDeck.trimEnd}s). Triggering transition!`);
         this.startTransition(this.crossfadeDuration, false);
+        return;
+      }
+
+      if (this.mode === 'classic') {
+        const remaining = duration - curTime;
+        if (remaining <= this.crossfadeTriggerLead && remaining > 0 && nextDeck.track) {
+          this.startTransition(this.crossfadeDuration, false);
+        }
       }
     }
+  }
+
+  // --- LIVE MIX RECORDING (Lossless Opus/WebM CD Quality) ---
+  startLiveRecording() {
+    if (this.isRecording) return;
+    try {
+      this.resumeAudioContext();
+      if (!this.recDestination) {
+        this.recDestination = this.audioCtx.createMediaStreamDestination();
+        this.masterGain.connect(this.recDestination);
+      }
+      this.recordedChunks = [];
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      this.mediaRecorder = new MediaRecorder(this.recDestination.stream, { mimeType: mime });
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
+      };
+      this.mediaRecorder.start(250);
+      this.isRecording = true;
+      this.recordingStartTime = performance.now();
+      console.log('[DJ Engine] 🔴 Live Mix Recording Started');
+      this.onRecordingStateChange?.({ isRecording: true, elapsedSec: 0 });
+    } catch (err) {
+      console.error('[DJ Engine] Failed to start live recording:', err);
+    }
+  }
+
+  stopLiveRecording() {
+    return new Promise((resolve) => {
+      if (!this.isRecording || !this.mediaRecorder) {
+        resolve(null);
+        return;
+      }
+      this.mediaRecorder.onstop = () => {
+        const mime = this.mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(this.recordedChunks, { type: mime });
+        this.isRecording = false;
+        console.log(`[DJ Engine] ⏹️ Recording Stopped. Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+        this.onRecordingStateChange?.({ isRecording: false, elapsedSec: 0 });
+        resolve(blob);
+      };
+      this.mediaRecorder.stop();
+    });
+  }
+
+  // --- OFFLINE AUDIO CONTEXT MIXDOWN RENDERER (Rave.DJ style 1-Click WAV download) ---
+  async renderOfflineTransitionMix(trackA, trackB, onProgress) {
+    if (!trackA || !trackB) throw new Error('Both tracks required for mix render');
+
+    onProgress?.(10, 'Fetching audio files...');
+    const fetchBuffer = async (url) => {
+      const res = await fetch(url);
+      const arrayBuf = await res.arrayBuffer();
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const decoded = await ctx.decodeAudioData(arrayBuf);
+      ctx.close();
+      return decoded;
+    };
+
+    const [bufA, bufB] = await Promise.all([
+      fetchBuffer(trackA.audioUrl),
+      fetchBuffer(trackB.audioUrl)
+    ]);
+
+    onProgress?.(45, 'Synthesizing seamless crossfade transition...');
+    const sampleRate = 44100;
+    const playADuration = 14; // 14s of Track A lead
+    const crossfadeDur = 8;   // 8s smooth crossfade
+    const playBDuration = 14; // 14s of Track B tail
+    const totalDuration = playADuration + crossfadeDur + playBDuration; // ~36s CD-quality mix
+
+    const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
+
+    // Source A
+    const sourceA = offlineCtx.createBufferSource();
+    sourceA.buffer = bufA;
+    const gainA = offlineCtx.createGain();
+    sourceA.connect(gainA);
+    gainA.connect(offlineCtx.destination);
+
+    // Source B
+    const sourceB = offlineCtx.createBufferSource();
+    sourceB.buffer = bufB;
+    const gainB = offlineCtx.createGain();
+    sourceB.connect(gainB);
+    gainB.connect(offlineCtx.destination);
+
+    // Load preset start offsets if configured
+    const presetA = this.loadPresetForTrack(trackA.id);
+    const presetB = this.loadPresetForTrack(trackB.id);
+    const cueA = presetA?.trimStart ?? (trackA.firstBeat || 15);
+    const cueB = presetB?.trimStart ?? (trackB.firstBeat || 10);
+
+    // Track A playback
+    sourceA.start(0, cueA, playADuration + crossfadeDur);
+
+    // Track A volume fade
+    gainA.gain.setValueAtTime(1.0, 0);
+    gainA.gain.setValueAtTime(1.0, playADuration);
+    gainA.gain.linearRampToValueAtTime(0.0, playADuration + crossfadeDur);
+
+    // Track B playback starting at playADuration
+    sourceB.start(playADuration, cueB, crossfadeDur + playBDuration);
+
+    // Track B volume fade in
+    gainB.gain.setValueAtTime(0.0, 0);
+    gainB.gain.setValueAtTime(0.0, playADuration);
+    gainB.gain.linearRampToValueAtTime(1.0, playADuration + crossfadeDur);
+
+    onProgress?.(75, 'Rendering audio offline at 44.1kHz...');
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    onProgress?.(92, 'Encoding 16-bit Stereo PCM WAV...');
+    const wavBlob = audioBufferToWavBlob(renderedBuffer);
+
+    onProgress?.(100, 'Mixdown complete!');
+    return wavBlob;
   }
 
   getVisualizerData() {
@@ -834,6 +1028,36 @@ class DJEngine {
     this.discoAudio?.pause();
     this.isPlaying = false;
   }
+
+  // Lifecycle Cleanup on Component Unmount
+  dispose() {
+    this.pauseAll();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    try {
+      this.deckA.source?.disconnect();
+      this.deckB.source?.disconnect();
+      this.deckA.gainNode?.disconnect();
+      this.deckB.gainNode?.disconnect();
+      this.deckA.analyser?.disconnect();
+      this.deckB.analyser?.disconnect();
+      this.discoSource?.disconnect();
+      this.discoGainNode?.disconnect();
+      this.masterGain?.disconnect();
+      this.limiter?.disconnect();
+      this.analyser?.disconnect();
+      if (this.audioCtx && this.audioCtx.state !== 'closed') {
+        this.audioCtx.close();
+      }
+    } catch (e) {
+      console.warn('[DJ Engine] Error during dispose:', e);
+    }
+    this.isInitialized = false;
+    console.log('[DJ Engine] Disposed AudioContext and disconnected all graph nodes cleanly.');
+  }
 }
 
 export const djEngine = new DJEngine();
+

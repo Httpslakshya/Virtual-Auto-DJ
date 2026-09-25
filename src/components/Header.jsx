@@ -1,7 +1,7 @@
 import React from 'react';
-import { Disc3, Flame, Radio, ExternalLink, ShieldCheck, Zap } from 'lucide-react';
+import { Disc3, Flame, Radio, ExternalLink, ShieldCheck, Zap, Download } from 'lucide-react';
 
-export default function Header({ mode, setMode, playlistTitle, targetUrl, trackCount }) {
+export default function Header({ mode, setMode, playlistTitle, targetUrl, trackCount, onOpenExportModal }) {
   return (
     <header className="dj-header">
       <div className="header-left">
@@ -61,6 +61,16 @@ export default function Header({ mode, setMode, playlistTitle, targetUrl, trackC
       </div>
 
       <div className="header-right">
+        <button
+          type="button"
+          className="header-export-btn"
+          onClick={onOpenExportModal}
+          title="Save or Download your DJ Mix as an audio file"
+        >
+          <Download size={14} className="text-cyan-400" />
+          <span>EXPORT MIX</span>
+        </button>
+
         <a
           href={targetUrl}
           target="_blank"

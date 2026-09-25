@@ -6,6 +6,7 @@ import Deck from './components/Deck';
 import Mixer from './components/Mixer';
 import PlaylistDrawer from './components/PlaylistDrawer';
 import PresetEditorModal from './components/PresetEditorModal';
+import MixExporterModal from './components/MixExporterModal';
 
 export default function App() {
   const audioARef = useRef(null);
@@ -21,6 +22,7 @@ export default function App() {
   const [crossfaderPos, setCrossfaderPos] = useState(0.0);
   const [activeDeckId, setActiveDeckId] = useState('A');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [transitionData, setTransitionData] = useState({
     progress: 0,
     remainingSec: 0,
@@ -184,9 +186,44 @@ export default function App() {
     }
 
     return () => {
-      djEngine.pauseAll();
+      djEngine.dispose();
     };
   }, []);
+
+  // Synchronize queue and next track whenever user switches between Original Order and BPM-Flow Order
+  useEffect(() => {
+    if (!currentPlaylist || currentPlaylist.length === 0) return;
+    const masterTrack = activeDeckId === 'A' ? djEngine.deckA.track : djEngine.deckB.track;
+    if (masterTrack) {
+      const idx = currentPlaylist.findIndex((t) => t.id === masterTrack.id);
+      if (idx !== -1) {
+        setQueueIndex(idx);
+        const idleDeckId = activeDeckId === 'A' ? 'B' : 'A';
+        const upcomingTrack = currentPlaylist[(idx + 1) % currentPlaylist.length];
+        const currentIdleTrack = idleDeckId === 'A' ? djEngine.deckA.track : djEngine.deckB.track;
+        if (upcomingTrack && upcomingTrack.id !== currentIdleTrack?.id) {
+          djEngine.loadTrack(idleDeckId, upcomingTrack);
+          if (idleDeckId === 'A') {
+            setDeckAState((prev) => ({
+              ...prev,
+              track: upcomingTrack,
+              duration: upcomingTrack.duration || 0,
+              bpm: upcomingTrack.bpm || 128,
+              cueTime: upcomingTrack.firstBeat || 0.0
+            }));
+          } else {
+            setDeckBState((prev) => ({
+              ...prev,
+              track: upcomingTrack,
+              duration: upcomingTrack.duration || 0,
+              bpm: upcomingTrack.bpm || 128,
+              cueTime: upcomingTrack.firstBeat || 0.0
+            }));
+          }
+        }
+      }
+    }
+  }, [isBpmOrder, activeDeckId, currentPlaylist]);
 
   // 2. Initial Track Loading (Deck A = Track 0, Deck B = Track 1)
   useEffect(() => {
@@ -318,6 +355,26 @@ export default function App() {
     }
   }, []);
 
+  const handleSetCue = useCallback((deckId, targetSeconds) => {
+    djEngine.setDeckCueTime(deckId, targetSeconds);
+    const updater = (prev) => ({ ...prev, cueTime: targetSeconds });
+    if (deckId === 'A') setDeckAState(updater);
+    else setDeckBState(updater);
+  }, []);
+
+  const handleDropTrack = useCallback((deckId, track) => {
+    djEngine.loadTrack(deckId, track);
+    const updater = (prev) => ({
+      ...prev,
+      track,
+      duration: track.duration || 0,
+      bpm: track.bpm || 128,
+      cueTime: track.firstBeat || 0.0
+    });
+    if (deckId === 'A') setDeckAState(updater);
+    else setDeckBState(updater);
+  }, []);
+
   const handleVolumeChange = useCallback((deckId, vol) => {
     djEngine.setDeckVolume(deckId, vol);
     if (deckId === 'A') {
@@ -439,6 +496,7 @@ export default function App() {
         playlistTitle={playlistData.playlistTitle}
         targetUrl={playlistData.targetUrl}
         trackCount={currentPlaylist.length}
+        onOpenExportModal={() => setIsExportModalOpen(true)}
       />
 
       <main className="dj-console-main">
@@ -450,7 +508,10 @@ export default function App() {
           isTransitioning={isTransitioning}
           mode={mode}
           currentBeat={beatA}
+          presets={presets}
           onSeek={handleSeek}
+          onSetCue={handleSetCue}
+          onDropTrack={handleDropTrack}
           onVolumeChange={handleVolumeChange}
           onEQChange={handleEQChange}
           onPlayPause={handleDeckPlayPause}
@@ -494,7 +555,10 @@ export default function App() {
           isTransitioning={isTransitioning}
           mode={mode}
           currentBeat={beatB}
+          presets={presets}
           onSeek={handleSeek}
+          onSetCue={handleSetCue}
+          onDropTrack={handleDropTrack}
           onVolumeChange={handleVolumeChange}
           onEQChange={handleEQChange}
           onPlayPause={handleDeckPlayPause}
@@ -513,6 +577,7 @@ export default function App() {
         activeTrackId={activeTrack?.id}
         nextTrackId={nextTrack?.id}
         activeDeckId={activeDeckId}
+        activeTrack={activeTrack}
         isBpmOrder={isBpmOrder}
         presets={presets}
         onToggleOrder={handleToggleOrder}
@@ -528,6 +593,15 @@ export default function App() {
         deckId={presetModalState.deckId}
         currentDeckTime={presetModalState.currentDeckTime}
         onPresetSaved={handlePresetSaved}
+      />
+
+      {/* Save / Export Mix Modal (Live Set Recorder & 1-Click WAV Render) */}
+      <MixExporterModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        deckATrack={deckAState.track}
+        deckBTrack={deckBState.track}
+        activeDeckId={activeDeckId}
       />
     </div>
   );

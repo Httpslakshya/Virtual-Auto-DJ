@@ -1,5 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Disc, Play, Pause, Volume2, Activity, Music, Zap, Sliders, Sparkles } from 'lucide-react';
+import { Disc, Play, Pause, Volume2, Activity, Music, Zap, Sliders, Sparkles, KeyRound, ArrowDownCircle } from 'lucide-react';
+import WaveformVisualizer from './WaveformVisualizer';
+import { CAMELOT_COLORS } from '../utils/harmonicMixing';
+import { djEngine } from '../audio/DJEngine';
 
 export default function Deck({
   deckId,
@@ -8,7 +11,10 @@ export default function Deck({
   isTransitioning,
   mode,
   currentBeat,
+  presets = {},
   onSeek,
+  onSetCue,
+  onDropTrack,
   onVolumeChange,
   onEQChange,
   onPlayPause,
@@ -19,11 +25,11 @@ export default function Deck({
   onJogScratchEnd,
   onOpenPresetEditor
 }) {
-  const progressBarRef = useRef(null);
   const jogRef = useRef(null);
   const [isDraggingJog, setIsDraggingJog] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const { 
     track, currentTime, duration, volume, eq, 
@@ -98,7 +104,37 @@ export default function Deck({
   }, [isDraggingJog, lastMousePos, deckId, onJogScratchMove, onJogScratchEnd]);
 
   return (
-    <div className={`dj-deck ${themeClass} ${isActiveMaster ? 'is-active-master' : ''}`}>
+    <div 
+      className={`dj-deck ${themeClass} ${isActiveMaster ? 'is-active-master' : ''} ${isDragOver ? 'is-deck-drag-over' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setIsDragOver(true);
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const raw = e.dataTransfer.getData('application/json');
+        if (raw) {
+          try {
+            const dropped = JSON.parse(raw);
+            onDropTrack?.(deckId, dropped);
+          } catch (err) {
+            console.error('Track drop error:', err);
+          }
+        }
+      }}
+    >
+      {/* Drag & Drop Visual Target Overlay */}
+      {isDragOver && (
+        <div className="deck-dropzone-overlay">
+          <ArrowDownCircle size={38} className="animate-bounce text-cyan-400" />
+          <span className="drop-title">DROP TO LOAD ON DECK {deckId}</span>
+          <span className="drop-sub">Release track to immediately stage and cue</span>
+        </div>
+      )}
+
       {/* Deck Header & Status */}
       <div className="deck-top-bar">
         <div className="deck-badge">
@@ -172,15 +208,26 @@ export default function Deck({
           {track ? track.title : '— No Track Loaded —'}
         </div>
         <div className="track-artist">
-          {track ? track.artist : 'Waiting for queue'}
+          {track ? track.artist : 'Waiting for queue (Drag track here)'}
         </div>
 
-        {/* BPM & Speed Tag */}
+        {/* BPM, Key & Speed Tag */}
         <div className="deck-bpm-strip">
           <div className="bpm-badge">
             <Music size={13} />
             <span>{bpm ? `${bpm} BPM` : '128.0 BPM'}</span>
           </div>
+
+          {track?.camelot && (
+            <div 
+              className="camelot-badge" 
+              title={`Harmonic Key: ${track.key || ''} (Camelot Code: ${track.camelot})`}
+              style={{ borderColor: `${CAMELOT_COLORS[track.camelot] || '#00f2fe'}66` }}
+            >
+              <KeyRound size={12} style={{ color: CAMELOT_COLORS[track.camelot] || '#00f2fe' }} />
+              <span>{track.camelot} · {track.key}</span>
+            </div>
+          )}
 
           <div className="pitch-sync-badge" title="Track Speed / Rate">
             <Zap size={13} className="text-emerald-400" />
@@ -200,29 +247,22 @@ export default function Deck({
           )}
         </div>
 
-        {/* Scrubber */}
-        <div className="deck-time-row">
-          <span className="time-elapsed">{formatTime(currentTime)}</span>
-          <div
-            ref={progressBarRef}
-            className="waveform-scrubber"
-            onClick={handleProgressClick}
-            title="Click to seek"
-          >
-            <div
-              className="waveform-progress"
-              style={{ width: `${progressPercent}%`, backgroundColor: accentColor }}
-            />
-            {duration > 0 && (
-              <div
-                className="cue-marker"
-                style={{ left: `${Math.min(100, ((cueTime || 0) / duration) * 100)}%` }}
-                title={`Cue Point: ${formatTime(cueTime || 0)}`}
-              />
-            )}
-          </div>
-          <span className="time-remaining">-{formatTime(remainingTime)}</span>
-        </div>
+        {/* Pro Waveform Visualizer with Beat Grid & Manual Cue Points */}
+        <WaveformVisualizer
+          deckId={deckId}
+          track={track}
+          currentTime={currentTime}
+          duration={duration}
+          cueTime={cueTime}
+          trimStart={track ? (presets[track.id]?.trimStart || 0) : 0}
+          trimEnd={track ? (presets[track.id]?.trimEnd || null) : null}
+          bpm={bpm}
+          isPlaying={isPlaying}
+          accentColor={accentColor}
+          analyserNode={djEngine.getDeckAnalyser(deckId)}
+          onSeek={(time) => onSeek(deckId, time)}
+          onSetCue={(time) => onSetCue(deckId, time)}
+        />
       </div>
 
       {/* Clean Performance Controls (Cue & Play) */}

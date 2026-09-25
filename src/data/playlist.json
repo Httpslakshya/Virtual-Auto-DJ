@@ -10,14 +10,16 @@
       "duration": 171.41,
       "artwork": "https://img.youtube.com/vi/2JzQhcSc2pM/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=2JzQhcSc2pM",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Dm",
+      "camelot": "7A"
     },
     {
       "id": "8Odu7ZYmB98",
@@ -27,14 +29,16 @@
       "duration": 64.42,
       "artwork": "https://img.youtube.com/vi/8Odu7ZYmB98/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=8Odu7ZYmB98",
-      "bpm": 140.0,
+      "bpm": 140,
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
         10.3,
         24.5,
         37.4
-      ]
+      ],
+      "key": "G",
+      "camelot": "9B"
     },
     {
       "id": "CgK2iGxNy7M",
@@ -44,14 +48,16 @@
       "duration": 169.87,
       "artwork": "https://img.youtube.com/vi/CgK2iGxNy7M/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=CgK2iGxNy7M",
-      "bpm": 160.0,
+      "bpm": 160,
       "firstBeat": 0.45,
       "beatInterval": 0.375,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "E",
+      "camelot": "12B"
     },
     {
       "id": "jWfNlCxjLoI",
@@ -61,14 +67,16 @@
       "duration": 164.62,
       "artwork": "https://img.youtube.com/vi/jWfNlCxjLoI/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=jWfNlCxjLoI",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Fm",
+      "camelot": "4A"
     },
     {
       "id": "H6H39VUGYYw",
@@ -82,10 +90,12 @@
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "XCIYHCXQoxQ",
@@ -99,10 +109,12 @@
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "A#m",
+      "camelot": "3A"
     },
     {
       "id": "SR57_CPR-lU",
@@ -112,14 +124,16 @@
       "duration": 255.29,
       "artwork": "https://img.youtube.com/vi/SR57_CPR-lU/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=SR57_CPR-lU",
-      "bpm": 132.0,
+      "bpm": 132,
       "firstBeat": 0.45,
       "beatInterval": 0.455,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Dm",
+      "camelot": "7A"
     },
     {
       "id": "Q5r9-k7xYGw",
@@ -133,10 +147,12 @@
       "firstBeat": 0.45,
       "beatInterval": 0.445,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Bm",
+      "camelot": "10A"
     },
     {
       "id": "7pNo-geT_MA",
@@ -150,10 +166,12 @@
       "firstBeat": 0.45,
       "beatInterval": 0.43,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "D#m",
+      "camelot": "2A"
     },
     {
       "id": "gAkbSydU3kw",
@@ -163,14 +181,16 @@
       "duration": 192.62,
       "artwork": "https://img.youtube.com/vi/gAkbSydU3kw/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=gAkbSydU3kw",
-      "bpm": 126.0,
+      "bpm": 126,
       "firstBeat": 0.45,
       "beatInterval": 0.476,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "F",
+      "camelot": "7B"
     },
     {
       "id": "Ky-QenzQD6U",
@@ -180,14 +200,16 @@
       "duration": 284.04,
       "artwork": "https://img.youtube.com/vi/Ky-QenzQD6U/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=Ky-QenzQD6U",
-      "bpm": 140.0,
+      "bpm": 140,
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "9mH-57TvCGo",
@@ -197,14 +219,16 @@
       "duration": 141.6,
       "artwork": "https://img.youtube.com/vi/9mH-57TvCGo/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=9mH-57TvCGo",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
         22.7,
         53.8,
         82.1
-      ]
+      ],
+      "key": "C#",
+      "camelot": "3B"
     },
     {
       "id": "5Jmhm3LoKao",
@@ -214,14 +238,16 @@
       "duration": 155.81,
       "artwork": "https://img.youtube.com/vi/5Jmhm3LoKao/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=5Jmhm3LoKao",
-      "bpm": 136.0,
+      "bpm": 136,
       "firstBeat": 0.45,
       "beatInterval": 0.441,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Em",
+      "camelot": "9A"
     },
     {
       "id": "ADVNZM-qrT4",
@@ -231,14 +257,16 @@
       "duration": 170.74,
       "artwork": "https://img.youtube.com/vi/ADVNZM-qrT4/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=ADVNZM-qrT4",
-      "bpm": 125.0,
+      "bpm": 125,
       "firstBeat": 0.45,
       "beatInterval": 0.48,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "G#",
+      "camelot": "4B"
     },
     {
       "id": "wb82fstyc-o",
@@ -248,14 +276,16 @@
       "duration": 162.29,
       "artwork": "https://img.youtube.com/vi/wb82fstyc-o/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=wb82fstyc-o",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C#",
+      "camelot": "3B"
     },
     {
       "id": "HZMNUREowcg",
@@ -265,14 +295,16 @@
       "duration": 217.08,
       "artwork": "https://img.youtube.com/vi/HZMNUREowcg/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=HZMNUREowcg",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "G",
+      "camelot": "9B"
     },
     {
       "id": "5JHfdBF1Wxk",
@@ -282,14 +314,16 @@
       "duration": 241.08,
       "artwork": "https://img.youtube.com/vi/5JHfdBF1Wxk/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=5JHfdBF1Wxk",
-      "bpm": 135.0,
+      "bpm": 135,
       "firstBeat": 0.45,
       "beatInterval": 0.444,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "D",
+      "camelot": "10B"
     },
     {
       "id": "ybf2ZExQxqM",
@@ -299,14 +333,16 @@
       "duration": 195.07,
       "artwork": "https://img.youtube.com/vi/ybf2ZExQxqM/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=ybf2ZExQxqM",
-      "bpm": 124.0,
+      "bpm": 124,
       "firstBeat": 0.45,
       "beatInterval": 0.484,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "D",
+      "camelot": "10B"
     },
     {
       "id": "RfMi5qoigVc",
@@ -316,14 +352,16 @@
       "duration": 165.07,
       "artwork": "https://img.youtube.com/vi/RfMi5qoigVc/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=RfMi5qoigVc",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "F",
+      "camelot": "7B"
     },
     {
       "id": "GeTdGkUFmi0",
@@ -333,14 +371,16 @@
       "duration": 180.05,
       "artwork": "https://img.youtube.com/vi/GeTdGkUFmi0/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=GeTdGkUFmi0",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "QghFWJzSirw",
@@ -350,14 +390,16 @@
       "duration": 186.17,
       "artwork": "https://img.youtube.com/vi/QghFWJzSirw/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=QghFWJzSirw",
-      "bpm": 140.0,
+      "bpm": 140,
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Bm",
+      "camelot": "10A"
     },
     {
       "id": "jzkYSITK_H4",
@@ -367,14 +409,16 @@
       "duration": 184.87,
       "artwork": "https://img.youtube.com/vi/jzkYSITK_H4/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=jzkYSITK_H4",
-      "bpm": 138.0,
+      "bpm": 138,
       "firstBeat": 0.45,
       "beatInterval": 0.435,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "bvAS1avuOpY",
@@ -384,14 +428,16 @@
       "duration": 193.73,
       "artwork": "https://img.youtube.com/vi/bvAS1avuOpY/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=bvAS1avuOpY",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "pg2tsJErYH4",
@@ -401,14 +447,16 @@
       "duration": 149.16,
       "artwork": "https://img.youtube.com/vi/pg2tsJErYH4/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=pg2tsJErYH4",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
         23.9,
-        55.0,
+        55,
         86.5
-      ]
+      ],
+      "key": "G",
+      "camelot": "9B"
     },
     {
       "id": "nTK0OEAzctM",
@@ -418,19 +466,21 @@
       "duration": 197.59,
       "artwork": "https://img.youtube.com/vi/nTK0OEAzctM/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=nTK0OEAzctM",
-      "bpm": 132.0,
+      "bpm": 132,
       "firstBeat": 0.45,
       "beatInterval": 0.455,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "D",
+      "camelot": "10B"
     },
     {
       "id": "i6GYhNg-Xkk",
       "title": "Terey Papa - OG Lucifer aka  X CALM  Prod.by CALM || NAALA PAAR",
-      "artist": "OG Lucifer \u2018\u2019",
+      "artist": "OG Lucifer ‘’",
       "audioUrl": "/audio/i6GYhNg-Xkk.mp3",
       "duration": 194.86,
       "artwork": "https://img.youtube.com/vi/i6GYhNg-Xkk/hqdefault.jpg",
@@ -439,10 +489,12 @@
       "firstBeat": 0.45,
       "beatInterval": 0.464,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "GSxvCNcS3fw",
@@ -452,14 +504,16 @@
       "duration": 219.29,
       "artwork": "https://img.youtube.com/vi/GSxvCNcS3fw/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=GSxvCNcS3fw",
-      "bpm": 136.0,
+      "bpm": 136,
       "firstBeat": 0.45,
       "beatInterval": 0.441,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "A",
+      "camelot": "11B"
     },
     {
       "id": "e25BkFILd3c",
@@ -469,14 +523,16 @@
       "duration": 151.54,
       "artwork": "https://img.youtube.com/vi/e25BkFILd3c/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=e25BkFILd3c",
-      "bpm": 134.0,
+      "bpm": 134,
       "firstBeat": 0.45,
       "beatInterval": 0.448,
       "mashupDrops": [
-        24.0,
-        55.0,
+        24,
+        55,
         87.9
-      ]
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "9ryDV655iuU",
@@ -486,14 +542,16 @@
       "duration": 176.69,
       "artwork": "https://img.youtube.com/vi/9ryDV655iuU/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=9ryDV655iuU",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "A0N777ImX0s",
@@ -503,14 +561,16 @@
       "duration": 185.76,
       "artwork": "https://img.youtube.com/vi/A0N777ImX0s/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=A0N777ImX0s",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "VjJtH7xM8G4",
@@ -520,14 +580,16 @@
       "duration": 198.62,
       "artwork": "https://img.youtube.com/vi/VjJtH7xM8G4/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=VjJtH7xM8G4",
-      "bpm": 132.0,
+      "bpm": 132,
       "firstBeat": 0.45,
       "beatInterval": 0.455,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Fm",
+      "camelot": "4A"
     },
     {
       "id": "jji_Bs9WqQ4",
@@ -537,14 +599,16 @@
       "duration": 158.52,
       "artwork": "https://img.youtube.com/vi/jji_Bs9WqQ4/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=jji_Bs9WqQ4",
-      "bpm": 126.0,
+      "bpm": 126,
       "firstBeat": 0.45,
       "beatInterval": 0.476,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Em",
+      "camelot": "9A"
     },
     {
       "id": "cL0KKSPjZf8",
@@ -554,14 +618,16 @@
       "duration": 218.86,
       "artwork": "https://img.youtube.com/vi/cL0KKSPjZf8/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=cL0KKSPjZf8",
-      "bpm": 140.0,
+      "bpm": 140,
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "xZgac3xo9IQ",
@@ -571,14 +637,16 @@
       "duration": 238.61,
       "artwork": "https://img.youtube.com/vi/xZgac3xo9IQ/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=xZgac3xo9IQ",
-      "bpm": 128.0,
+      "bpm": 128,
       "firstBeat": 0.45,
       "beatInterval": 0.469,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "F#m",
+      "camelot": "11A"
     },
     {
       "id": "X3LHcxy6530",
@@ -588,31 +656,35 @@
       "duration": 186.65,
       "artwork": "https://img.youtube.com/vi/X3LHcxy6530/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=X3LHcxy6530",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "d9Pn4GH5Hus",
-      "title": "THAT\u2019S IT  | AKKI ON THE MIC | LEGACY",
+      "title": "THAT’S IT  | AKKI ON THE MIC | LEGACY",
       "artist": "Kalamkaar",
       "audioUrl": "/audio/d9Pn4GH5Hus.mp3",
       "duration": 187.18,
       "artwork": "https://img.youtube.com/vi/d9Pn4GH5Hus/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=d9Pn4GH5Hus",
-      "bpm": 134.0,
+      "bpm": 134,
       "firstBeat": 0.45,
       "beatInterval": 0.448,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "8n_giXrAFhQ",
@@ -622,14 +694,16 @@
       "duration": 120.22,
       "artwork": "https://img.youtube.com/vi/8n_giXrAFhQ/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=8n_giXrAFhQ",
-      "bpm": 142.0,
+      "bpm": 142,
       "firstBeat": 0.45,
       "beatInterval": 0.423,
       "mashupDrops": [
         19.2,
         45.7,
         69.7
-      ]
+      ],
+      "key": "C",
+      "camelot": "8B"
     },
     {
       "id": "o907r6NsK9s",
@@ -639,14 +713,16 @@
       "duration": 182.42,
       "artwork": "https://img.youtube.com/vi/o907r6NsK9s/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=o907r6NsK9s",
-      "bpm": 140.0,
+      "bpm": 140,
       "firstBeat": 0.45,
       "beatInterval": 0.429,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Cm",
+      "camelot": "5A"
     },
     {
       "id": "PtNZE0hGnWk",
@@ -656,14 +732,16 @@
       "duration": 214.54,
       "artwork": "https://img.youtube.com/vi/PtNZE0hGnWk/hqdefault.jpg",
       "youtubeUrl": "https://www.youtube.com/watch?v=PtNZE0hGnWk",
-      "bpm": 130.0,
+      "bpm": 130,
       "firstBeat": 0.45,
       "beatInterval": 0.462,
       "mashupDrops": [
-        24.0,
-        55.0,
-        90.0
-      ]
+        24,
+        55,
+        90
+      ],
+      "key": "Em",
+      "camelot": "9A"
     }
   ],
   "bpmOptimizedOrder": [

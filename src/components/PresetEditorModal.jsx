@@ -16,18 +16,20 @@ export default function PresetEditorModal({
   if (!isOpen || !track) return null;
 
   const initialPreset = djEngine.loadPresetForTrack(track.id) || {};
+  const trackDuration = track.duration || 180;
 
   const [trimStart, setTrimStart] = useState(initialPreset.trimStart ?? 0);
+  const [trimEnd, setTrimEnd] = useState(initialPreset.trimEnd ?? trackDuration);
   const [speed, setSpeed] = useState(initialPreset.speed ?? 1.0);
   const [reverbWet, setReverbWet] = useState(initialPreset.reverbWet ?? 0.0);
   const [reverbDecay, setReverbDecay] = useState(initialPreset.reverbDecay ?? 2.2);
 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewProgress, setPreviewProgress] = useState(0);
+  const [previewMode, setPreviewMode] = useState('start'); // 'start' | 'end'
   const previewAudioRef = useRef(null);
   const previewTimerRef = useRef(null);
 
-  const trackDuration = track.duration || 180;
   const targetBpm = Math.round((track.bpm || 128) * speed);
 
   const formatTime = (secs) => {
@@ -38,33 +40,43 @@ export default function PresetEditorModal({
     return `${m}:${s < 10 ? '0' : ''}${s}.${ms}`;
   };
 
-  // Preview custom start point
-  const handleTogglePreview = () => {
-    if (isPreviewing) {
+  // Preview custom start or end point
+  const handleTogglePreviewStart = () => {
+    if (isPreviewing && previewMode === 'start') {
       stopPreview();
     } else {
-      startPreview();
+      startPreview('start', trimStart, 6.0);
     }
   };
 
-  const startPreview = () => {
+  const handleTogglePreviewEnd = () => {
+    if (isPreviewing && previewMode === 'end') {
+      stopPreview();
+    } else {
+      const startAt = Math.max(0, trimEnd - 5.0);
+      startPreview('end', startAt, 5.0);
+    }
+  };
+
+  const startPreview = (mode, startFromSec, durationSec) => {
     if (!previewAudioRef.current) return;
+    stopPreview();
     const audio = previewAudioRef.current;
-    audio.currentTime = trimStart;
+    audio.currentTime = startFromSec;
     audio.playbackRate = speed;
     audio.preservesPitch = true;
     audio.volume = 0.9;
     audio.play().catch(console.error);
     setIsPreviewing(true);
+    setPreviewMode(mode);
 
     const startTime = performance.now();
-    const previewDuration = 6.0; // Preview 6 seconds from start point
 
     const tick = () => {
       const elapsed = (performance.now() - startTime) / 1000;
-      setPreviewProgress(Math.min(100, (elapsed / previewDuration) * 100));
+      setPreviewProgress(Math.min(100, (elapsed / durationSec) * 100));
 
-      if (elapsed >= previewDuration) {
+      if (elapsed >= durationSec) {
         stopPreview();
       } else {
         previewTimerRef.current = requestAnimationFrame(tick);
@@ -90,17 +102,26 @@ export default function PresetEditorModal({
     };
   }, []);
 
-  const handleUseCurrentTime = () => {
+  const handleUseCurrentTimeStart = () => {
     if (currentDeckTime > 0) {
       const trimmed = Math.min(trackDuration - 5, Math.max(0, parseFloat(currentDeckTime.toFixed(1))));
       setTrimStart(trimmed);
     }
   };
 
+  const handleUseCurrentTimeEnd = () => {
+    if (currentDeckTime > 0) {
+      const trimmed = Math.max(trimStart + 5, Math.min(trackDuration, parseFloat(currentDeckTime.toFixed(1))));
+      setTrimEnd(trimmed);
+    }
+  };
+
   const handleSave = () => {
     stopPreview();
+    const hasOutroCut = trimEnd < trackDuration - 1.5;
     const presetData = {
       trimStart: parseFloat(trimStart.toFixed(1)),
+      trimEnd: hasOutroCut ? parseFloat(trimEnd.toFixed(1)) : null,
       speed: parseFloat(speed.toFixed(2)),
       reverbWet: parseFloat(reverbWet.toFixed(2)),
       reverbDecay: parseFloat(reverbDecay.toFixed(1)),
@@ -112,6 +133,7 @@ export default function PresetEditorModal({
     // If this track is currently loaded on deck A or B, apply live!
     if (deckId) {
       djEngine.setDeckStartPoint(deckId, presetData.trimStart);
+      djEngine.setDeckOutroPoint(deckId, presetData.trimEnd);
       djEngine.setDeckRate(deckId, presetData.speed);
       djEngine.setDeckReverb(deckId, presetData.reverbWet, presetData.reverbDecay);
     }
@@ -124,12 +146,14 @@ export default function PresetEditorModal({
     stopPreview();
     djEngine.deletePresetForTrack(track.id);
     setTrimStart(0);
+    setTrimEnd(trackDuration);
     setSpeed(1.0);
     setReverbWet(0.0);
     setReverbDecay(2.2);
 
     if (deckId) {
       djEngine.setDeckStartPoint(deckId, 0);
+      djEngine.setDeckOutroPoint(deckId, null);
       djEngine.setDeckRate(deckId, 1.0);
       djEngine.setDeckReverb(deckId, 0.0, 2.2);
     }
@@ -196,7 +220,7 @@ export default function PresetEditorModal({
               <button
                 type="button"
                 className="preset-action-chip"
-                onClick={handleUseCurrentTime}
+                onClick={handleUseCurrentTimeStart}
                 disabled={currentDeckTime <= 0}
                 title="Capture currently playing timestamp on deck"
               >
@@ -205,17 +229,73 @@ export default function PresetEditorModal({
 
               <button
                 type="button"
-                className={`preset-preview-btn ${isPreviewing ? 'preview-active' : ''}`}
-                onClick={handleTogglePreview}
+                className={`preset-preview-btn ${isPreviewing && previewMode === 'start' ? 'preview-active' : ''}`}
+                onClick={handleTogglePreviewStart}
               >
-                {isPreviewing ? <Pause size={14} /> : <Play size={14} />}
-                <span>{isPreviewing ? 'Stop Preview' : 'Preview Start Drop'}</span>
+                {isPreviewing && previewMode === 'start' ? <Pause size={14} /> : <Play size={14} />}
+                <span>{isPreviewing && previewMode === 'start' ? 'Stop Preview' : 'Preview Start Drop'}</span>
               </button>
             </div>
 
-            {isPreviewing && (
+            {isPreviewing && previewMode === 'start' && (
               <div className="preview-progress-bar">
                 <div className="preview-progress-fill" style={{ width: `${previewProgress}%` }} />
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 1B: TRIM OUTRO / END POINT */}
+          <div className="preset-section">
+            <div className="preset-section-header">
+              <div className="flex items-center gap-1.5 text-rose-400">
+                <Clock size={16} />
+                <span className="section-title">END POINT / TRIM OUTRO (Piche Ka Cut)</span>
+              </div>
+              <span className="preset-val-badge text-rose-300">
+                {formatTime(trimEnd)} / {formatTime(trackDuration)}
+              </span>
+            </div>
+
+            <p className="preset-hint">
+              Set where the track should cut off or trigger transition, cutting out long dead outros.
+            </p>
+
+            <div className="preset-slider-container">
+              <input
+                type="range"
+                min={Math.max(5, trimStart + 5)}
+                max={trackDuration}
+                step="0.5"
+                value={trimEnd}
+                onChange={(e) => setTrimEnd(parseFloat(e.target.value))}
+                className="preset-range-slider rose-accent"
+              />
+            </div>
+
+            <div className="preset-trim-actions">
+              <button
+                type="button"
+                className="preset-action-chip"
+                onClick={handleUseCurrentTimeEnd}
+                disabled={currentDeckTime <= 0}
+                title="Capture currently playing timestamp on deck for Outro Cut"
+              >
+                Use Current Deck Time ({formatTime(currentDeckTime)})
+              </button>
+
+              <button
+                type="button"
+                className={`preset-preview-btn ${isPreviewing && previewMode === 'end' ? 'preview-active' : ''}`}
+                onClick={handleTogglePreviewEnd}
+              >
+                {isPreviewing && previewMode === 'end' ? <Pause size={14} /> : <Play size={14} />}
+                <span>{isPreviewing && previewMode === 'end' ? 'Stop Preview' : 'Preview Outro Cut'}</span>
+              </button>
+            </div>
+
+            {isPreviewing && previewMode === 'end' && (
+              <div className="preview-progress-bar">
+                <div className="preview-progress-fill" style={{ width: `${previewProgress}%`, backgroundColor: '#f43f5e' }} />
               </div>
             )}
           </div>
