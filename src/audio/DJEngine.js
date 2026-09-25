@@ -163,6 +163,23 @@ class DJEngine {
     }
   }
 
+  buildImpulseResponse(duration = 2.2, decay = 2.0) {
+    if (!this.audioCtx) return null;
+    const rate = this.audioCtx.sampleRate;
+    const length = Math.max(1, Math.floor(rate * duration));
+    const impulse = this.audioCtx.createBuffer(2, length, rate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+
+    for (let i = 0; i < length; i++) {
+      const t = i / rate;
+      const env = Math.exp(-t * decay);
+      left[i] = (Math.random() * 2 - 1) * env;
+      right[i] = (Math.random() * 2 - 1) * env;
+    }
+    return impulse;
+  }
+
   setupDeckNodes(deck) {
     if (!deck.audio || deck.source) return;
 
@@ -186,10 +203,29 @@ class DJEngine {
       deck.eqHigh.frequency.setValueAtTime(4000, this.audioCtx.currentTime);
       deck.eqHigh.gain.setValueAtTime(0, this.audioCtx.currentTime);
 
+      // Studio Reverb Node Network (Dry / Wet send)
+      deck.reverbDryGain = this.audioCtx.createGain();
+      deck.reverbDryGain.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
+
+      deck.reverbWetGain = this.audioCtx.createGain();
+      deck.reverbWetGain.gain.setValueAtTime(0.0, this.audioCtx.currentTime);
+
+      deck.reverbConvolver = this.audioCtx.createConvolver();
+      deck.reverbConvolver.buffer = this.buildImpulseResponse(2.2, 2.0);
+
+      // Connect: source -> eqLow -> eqMid -> eqHigh
       deck.source.connect(deck.eqLow);
       deck.eqLow.connect(deck.eqMid);
       deck.eqMid.connect(deck.eqHigh);
-      deck.eqHigh.connect(deck.gainNode);
+
+      // Send to Dry and Wet branches
+      deck.eqHigh.connect(deck.reverbDryGain);
+      deck.reverbDryGain.connect(deck.gainNode);
+
+      deck.eqHigh.connect(deck.reverbConvolver);
+      deck.reverbConvolver.connect(deck.reverbWetGain);
+      deck.reverbWetGain.connect(deck.gainNode);
+
       deck.gainNode.connect(this.masterGain);
     } catch (err) {
       console.warn(`[DJ Engine] setupDeckNodes error on Deck ${deck.id}:`, err);
@@ -238,7 +274,10 @@ class DJEngine {
 
   setDeckEQ(deckId, band, gainDb) {
     const deck = deckId === 'A' ? this.deckA : this.deckB;
-    if (!this.audioCtx) return;
+    if (!deck.userEq) deck.userEq = { low: 0, mid: 0, high: 0 };
+    deck.userEq[band] = gainDb;
+
+    if (!this.audioCtx || this.isDiscoBeatActive) return;
     const now = this.audioCtx.currentTime;
     const val = Math.max(-24, Math.min(12, gainDb));
 
@@ -251,22 +290,123 @@ class DJEngine {
     }
   }
 
+  // --- PRESET SYSTEM (Trim / Start Point, Speed, Reverb) ---
+  loadPresetForTrack(trackId) {
+    try {
+      const raw = localStorage.getItem('autodj_track_presets');
+      if (raw) {
+        const presets = JSON.parse(raw);
+        return presets[trackId] || null;
+      }
+    } catch (e) {
+      console.warn('Error reading presets:', e);
+    }
+    return null;
+  }
+
+  savePresetForTrack(trackId, presetData) {
+    try {
+      const raw = localStorage.getItem('autodj_track_presets');
+      const presets = raw ? JSON.parse(raw) : {};
+      presets[trackId] = presetData;
+      localStorage.setItem('autodj_track_presets', JSON.stringify(presets));
+      console.log(`[Preset Saved] Saved preset for ${trackId}:`, presetData);
+      this.onPresetsUpdated?.(presets);
+      return presets;
+    } catch (e) {
+      console.error('Error saving preset:', e);
+    }
+  }
+
+  deletePresetForTrack(trackId) {
+    try {
+      const raw = localStorage.getItem('autodj_track_presets');
+      if (raw) {
+        const presets = JSON.parse(raw);
+        delete presets[trackId];
+        localStorage.setItem('autodj_track_presets', JSON.stringify(presets));
+        this.onPresetsUpdated?.(presets);
+        return presets;
+      }
+    } catch (e) {
+      console.error('Error deleting preset:', e);
+    }
+  }
+
+  getAllPresets() {
+    try {
+      const raw = localStorage.getItem('autodj_track_presets');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  setDeckReverb(deckId, wetPercent, decay = 2.2) {
+    const deck = deckId === 'A' ? this.deckA : this.deckB;
+    deck.reverbWet = Math.max(0, Math.min(1, wetPercent));
+    deck.reverbDecay = decay;
+
+    if (!this.audioCtx || !deck.reverbWetGain || !deck.reverbDryGain) return;
+    const now = this.audioCtx.currentTime;
+
+    deck.reverbWetGain.gain.setTargetAtTime(deck.reverbWet, now, 0.05);
+    deck.reverbDryGain.gain.setTargetAtTime(1.0 - (deck.reverbWet * 0.35), now, 0.05);
+
+    if (deck.reverbConvolver && Math.abs((deck.currentDecay || 2.0) - decay) > 0.2) {
+      deck.currentDecay = decay;
+      deck.reverbConvolver.buffer = this.buildImpulseResponse(Math.max(1.5, decay * 1.1), decay);
+    }
+  }
+
+  setDeckRate(deckId, rate) {
+    const deck = deckId === 'A' ? this.deckA : this.deckB;
+    const r = Math.max(0.5, Math.min(2.0, rate));
+    deck.userRate = r;
+    deck.rate = r;
+    if (deck.audio) {
+      deck.audio.preservesPitch = true;
+      deck.audio.playbackRate = r;
+    }
+  }
+
+  setDeckStartPoint(deckId, startSecs) {
+    const deck = deckId === 'A' ? this.deckA : this.deckB;
+    deck.cueTime = Math.max(0, startSecs);
+    deck.trimStart = Math.max(0, startSecs);
+  }
+
   loadTrack(deckId, track) {
     const deck = deckId === 'A' ? this.deckA : this.deckB;
     deck.track = track;
     deck.bpm = track.bpm || 128;
-    deck.cueTime = track.firstBeat || 0.0;
+
+    // Check if user has a custom saved preset for this track!
+    const preset = this.loadPresetForTrack(track.id);
+    if (preset) {
+      deck.cueTime = preset.trimStart ?? (track.firstBeat || 0.0);
+      deck.trimStart = preset.trimStart ?? 0.0;
+      deck.rate = preset.speed ?? 1.0;
+      deck.userRate = preset.speed ?? 1.0;
+      this.setDeckReverb(deckId, preset.reverbWet ?? 0.0, preset.reverbDecay ?? 2.2);
+    } else {
+      deck.cueTime = track.firstBeat || 0.0;
+      deck.trimStart = 0.0;
+      deck.rate = 1.0;
+      deck.userRate = 1.0;
+      this.setDeckReverb(deckId, 0.0, 2.2);
+    }
 
     if (deck.audio) {
       deck.audio.src = track.audioUrl;
       deck.audio.load();
-      deck.audio.playbackRate = 1.0;
+      deck.audio.preservesPitch = true;
+      deck.audio.playbackRate = deck.rate;
     }
-    deck.rate = 1.0;
     deck.isPreloaded = true;
-    console.log(`[DJ Engine] Loaded "${track.title}" on Deck ${deckId}`);
+    console.log(`[DJ Engine] Loaded "${track.title}" on Deck ${deckId} (Preset: ${preset ? 'Custom' : 'Default'})`);
 
-    // If disco beat mashup is currently active, ensure vocal isolation EQ applies to this deck
+    // If disco beat mashup is currently active, ensure vocal isolation applies
     if (this.isDiscoBeatActive) {
       this.applyVocalIsolationEQ(true);
     }
@@ -274,7 +414,7 @@ class DJEngine {
     this.onTrackLoaded(deckId, track);
   }
 
-  // --- DISCO BEAT OVERLAY (128 BPM Fast Disco Beat + Vocals Overlay) ---
+  // --- DISCO BEAT OVERLAY (128 BPM Fast Disco Drum Groove + Acapella Vocals) ---
   initDiscoBeat(discoAudioEl) {
     if (!discoAudioEl || this.discoAudio === discoAudioEl) return;
     this.discoAudio = discoAudioEl;
@@ -308,13 +448,13 @@ class DJEngine {
         this.discoAudio.play().catch(console.error);
       }
       this.applyVocalIsolationEQ(true);
-      console.log('[DJ Engine] 🕺 Disco Beat Mashup Activated: 128 BPM Groove + Vocals Isolation');
+      console.log('[DJ Engine] 🕺 Disco Beat Mashup Activated: 128 BPM Drum Groove + Brickwall Vocal Isolation');
     } else {
       if (this.discoAudio) {
         this.discoAudio.pause();
       }
       this.applyVocalIsolationEQ(false);
-      console.log('[DJ Engine] Disco Beat Mashup Deactivated');
+      console.log('[DJ Engine] Disco Beat Mashup Deactivated: Normal Mix Restored');
     }
 
     this.onDiscoBeatToggle(this.isDiscoBeatActive);
@@ -330,23 +470,42 @@ class DJEngine {
     }
   }
 
-  // Live DJ Vocal Isolation: Filter low bass/kicks from original tracks so the fast Disco beat drives the rhythm
+  // Live DJ Acapella Isolation: Brickwall cuts original drums/bass so only the vocal track rides the disco beat
   applyVocalIsolationEQ(enable) {
     if (!this.audioCtx) return;
     const now = this.audioCtx.currentTime;
     [this.deckA, this.deckB].forEach((deck) => {
-      if (deck.eqLow && deck.eqMid) {
+      if (deck.eqLow && deck.eqMid && deck.eqHigh) {
         if (enable) {
-          // Low cut (-12dB) to remove 808s and kick from original track, letting Disco beat drive
-          // Mid boost (+4.5dB) to isolate and push the rap/singing vocals upfront
-          deck.eqLow.gain.setTargetAtTime(-12, now, 0.08);
-          deck.eqMid.gain.setTargetAtTime(4.5, now, 0.08);
-          if (deck.eqHigh) deck.eqHigh.gain.setTargetAtTime(1.5, now, 0.08);
+          // 1. High-Pass at 340 Hz (Q=1.2) - Brickwall eliminates 100% of kick drum, sub-bass, 808s
+          deck.eqLow.type = 'highpass';
+          deck.eqLow.frequency.setTargetAtTime(340, now, 0.05);
+          deck.eqLow.Q.setTargetAtTime(1.2, now, 0.05);
+
+          // 2. Vocal Formant Peaking Boost at 1450 Hz (+7.5dB, Q=1.0) - Pushes vocal formants upfront
+          deck.eqMid.type = 'peaking';
+          deck.eqMid.frequency.setTargetAtTime(1450, now, 0.05);
+          deck.eqMid.Q.setTargetAtTime(1.0, now, 0.05);
+          deck.eqMid.gain.setTargetAtTime(7.5, now, 0.05);
+
+          // 3. Low-Pass at 3200 Hz (Q=1.1) - Completely cuts original hi-hats, shakers, cymbals, snare clatter
+          deck.eqHigh.type = 'lowpass';
+          deck.eqHigh.frequency.setTargetAtTime(3200, now, 0.05);
+          deck.eqHigh.Q.setTargetAtTime(1.1, now, 0.05);
         } else {
-          // Restore to flat (0 dB)
-          deck.eqLow.gain.setTargetAtTime(0, now, 0.08);
-          deck.eqMid.gain.setTargetAtTime(0, now, 0.08);
-          if (deck.eqHigh) deck.eqHigh.gain.setTargetAtTime(0, now, 0.08);
+          // Restore to standard Studio 3-band EQ
+          deck.eqLow.type = 'lowshelf';
+          deck.eqLow.frequency.setTargetAtTime(250, now, 0.05);
+          deck.eqLow.gain.setTargetAtTime(deck.userEq?.low || 0, now, 0.05);
+
+          deck.eqMid.type = 'peaking';
+          deck.eqMid.frequency.setTargetAtTime(1200, now, 0.05);
+          deck.eqMid.Q.setTargetAtTime(1.0, now, 0.05);
+          deck.eqMid.gain.setTargetAtTime(deck.userEq?.mid || 0, now, 0.05);
+
+          deck.eqHigh.type = 'highshelf';
+          deck.eqHigh.frequency.setTargetAtTime(4000, now, 0.05);
+          deck.eqHigh.gain.setTargetAtTime(deck.userEq?.high || 0, now, 0.05);
         }
       }
     });

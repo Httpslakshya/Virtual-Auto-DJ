@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Disc, Play, Pause, Volume2, Activity, Music, Zap } from 'lucide-react';
+import { Disc, Play, Pause, Volume2, Activity, Music, Zap, Sliders, Sparkles } from 'lucide-react';
 
 export default function Deck({
   deckId,
@@ -16,7 +16,8 @@ export default function Deck({
   onCueUp,
   onJogScratchStart,
   onJogScratchMove,
-  onJogScratchEnd
+  onJogScratchEnd,
+  onOpenPresetEditor
 }) {
   const progressBarRef = useRef(null);
   const jogRef = useRef(null);
@@ -181,10 +182,22 @@ export default function Deck({
             <span>{bpm ? `${bpm} BPM` : '128.0 BPM'}</span>
           </div>
 
-          <div className="pitch-sync-badge" title="Speed Protection: Tracks are NEVER slowed down below 1.0x">
+          <div className="pitch-sync-badge" title="Track Speed / Rate">
             <Zap size={13} className="text-emerald-400" />
             <span>{(rate || 1.0).toFixed(2)}x Speed</span>
           </div>
+
+          {track && (
+            <button
+              type="button"
+              className="deck-preset-btn"
+              onClick={() => onOpenPresetEditor?.(deckId, track)}
+              title="Open Mix Preset: Trim Start Point, Boost Speed, Add Reverb"
+            >
+              <Sliders size={12} className="text-cyan-400" />
+              <span>EDIT PRESET</span>
+            </button>
+          )}
         </div>
 
         {/* Scrubber */}

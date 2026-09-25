@@ -1,5 +1,5 @@
 import React from 'react';
-import { ListMusic, Play, Clock, Flame, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
+import { ListMusic, Play, Clock, Flame, ArrowRightLeft, CheckCircle2, Sliders, Sparkles } from 'lucide-react';
 
 export default function PlaylistDrawer({
   tracks,
@@ -7,8 +7,10 @@ export default function PlaylistDrawer({
   nextTrackId,
   activeDeckId,
   isBpmOrder,
+  presets = {},
   onToggleOrder,
-  onSelectTrack
+  onSelectTrack,
+  onOpenPresetEditor
 }) {
   const formatTime = (secs) => {
     if (!secs) return '0:00';
@@ -109,6 +111,12 @@ export default function PlaylistDrawer({
               </div>
 
               <div className="track-stats">
+                {presets[track.id] && (
+                  <span className="track-preset-indicator" title="Custom Preset Active (Trim/Speed/Reverb)">
+                    ⭐ PRESET
+                  </span>
+                )}
+
                 <div className="track-bpm-tag">
                   {track.bpm ? `${track.bpm} BPM` : '—'}
                 </div>
@@ -116,6 +124,18 @@ export default function PlaylistDrawer({
                   <Clock size={12} />
                   <span>{formatTime(track.duration)}</span>
                 </div>
+
+                <button
+                  type="button"
+                  className="track-edit-preset-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenPresetEditor?.(null, track);
+                  }}
+                  title="Edit Track Preset (Trim Start, Speed, Reverb)"
+                >
+                  <Sliders size={13} />
+                </button>
               </div>
             </div>
           );

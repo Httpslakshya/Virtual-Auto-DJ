@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Deck from './components/Deck';
 import Mixer from './components/Mixer';
 import PlaylistDrawer from './components/PlaylistDrawer';
+import PresetEditorModal from './components/PresetEditorModal';
 
 export default function App() {
   const audioARef = useRef(null);
@@ -40,6 +41,15 @@ export default function App() {
 
   // Track queue index
   const [queueIndex, setQueueIndex] = useState(0);
+
+  // User mix presets (Trim start, speed boost, reverb)
+  const [presets, setPresets] = useState(() => djEngine.getAllPresets());
+  const [presetModalState, setPresetModalState] = useState({
+    isOpen: false,
+    track: null,
+    deckId: null,
+    currentDeckTime: 0
+  });
 
   // Ordered tracklist based on order mode
   const currentPlaylist = useMemo(() => {
@@ -109,6 +119,10 @@ export default function App() {
         setIsDiscoBeatActive(active);
       };
 
+      djEngine.onPresetsUpdated = (updated) => {
+        setPresets({ ...updated });
+      };
+
       // Guaranteed synchronization whenever any track is loaded into either deck
       djEngine.onTrackLoaded = (deckId, track) => {
         if (deckId === 'A') {
@@ -117,7 +131,7 @@ export default function App() {
             track,
             duration: track.duration || prev.duration || 0,
             bpm: track.bpm || 128,
-            cueTime: track.firstBeat || 0.0
+            cueTime: djEngine.deckA.cueTime || track.firstBeat || 0.0
           }));
         } else {
           setDeckBState((prev) => ({
@@ -125,7 +139,7 @@ export default function App() {
             track,
             duration: track.duration || prev.duration || 0,
             bpm: track.bpm || 128,
-            cueTime: track.firstBeat || 0.0
+            cueTime: djEngine.deckB.cueTime || track.firstBeat || 0.0
           }));
         }
       };
@@ -372,6 +386,43 @@ export default function App() {
     setIsDiscoBeatActive(djEngine.isDiscoBeatActive);
   }, []);
 
+  const handleOpenPresetEditor = useCallback((deckId, track) => {
+    let currentTime = 0;
+    if (deckId === 'A' && audioARef.current) {
+      currentTime = audioARef.current.currentTime;
+    } else if (deckId === 'B' && audioBRef.current) {
+      currentTime = audioBRef.current.currentTime;
+    }
+    setPresetModalState({
+      isOpen: true,
+      track,
+      deckId,
+      currentDeckTime: currentTime
+    });
+  }, []);
+
+  const handleClosePresetEditor = useCallback(() => {
+    setPresetModalState((prev) => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const handlePresetSaved = useCallback((trackId, preset) => {
+    // If active track on Deck A or B updated its start time or speed, update deck UI
+    if (deckAState.track?.id === trackId && preset) {
+      setDeckAState((prev) => ({
+        ...prev,
+        cueTime: preset.trimStart ?? prev.cueTime,
+        rate: preset.speed ?? prev.rate
+      }));
+    }
+    if (deckBState.track?.id === trackId && preset) {
+      setDeckBState((prev) => ({
+        ...prev,
+        cueTime: preset.trimStart ?? prev.cueTime,
+        rate: preset.speed ?? prev.rate
+      }));
+    }
+  }, [deckAState.track, deckBState.track]);
+
   const activeTrack = activeDeckId === 'A' ? deckAState.track : deckBState.track;
   const nextTrack = activeDeckId === 'A' ? deckBState.track : deckAState.track;
 
@@ -408,6 +459,7 @@ export default function App() {
           onJogScratchStart={handleJogScratchStart}
           onJogScratchMove={handleJogScratchMove}
           onJogScratchEnd={handleJogScratchEnd}
+          onOpenPresetEditor={handleOpenPresetEditor}
         />
 
         {/* Center: Mixer */}
@@ -451,6 +503,7 @@ export default function App() {
           onJogScratchStart={handleJogScratchStart}
           onJogScratchMove={handleJogScratchMove}
           onJogScratchEnd={handleJogScratchEnd}
+          onOpenPresetEditor={handleOpenPresetEditor}
         />
       </main>
 
@@ -461,8 +514,20 @@ export default function App() {
         nextTrackId={nextTrack?.id}
         activeDeckId={activeDeckId}
         isBpmOrder={isBpmOrder}
+        presets={presets}
         onToggleOrder={handleToggleOrder}
         onSelectTrack={handleSelectTrack}
+        onOpenPresetEditor={handleOpenPresetEditor}
+      />
+
+      {/* Track Mix Preset Editor Modal */}
+      <PresetEditorModal
+        isOpen={presetModalState.isOpen}
+        onClose={handleClosePresetEditor}
+        track={presetModalState.track}
+        deckId={presetModalState.deckId}
+        currentDeckTime={presetModalState.currentDeckTime}
+        onPresetSaved={handlePresetSaved}
       />
     </div>
   );
